@@ -23,13 +23,18 @@
     <h2 class="mb-4">Dashboard</h2>
     <p>Welcome to your Email Marketing Automation Platform!</p>
 
-    <div class="row g-4">
-        <div class="col-md-4">
-            <div class="card shadow-sm p-4">
-                <h5>Subscribers</h5>
-                <p>Manage your email subscribers.</p>
-            </div>
-        </div>
+    
+<div class="col-md-4">
+    <div class="card shadow-sm p-4 h-100">
+        <h5>Subscribers</h5>
+        <p>Manage your email subscribers.</p>
+
+        <a href="{{ url_for('main.subscribers') }}"
+           class="btn btn-primary">
+            Manage Subscribers
+        </a>
+    </div>
+</div>
 
         <div class="col-md-4">
             <div class="card shadow-sm p-4">
@@ -45,12 +50,24 @@
             </div>
         </div>
 
-        <div class="col-md-4">
-            <div class="card shadow-sm p-4">
-                <h5>Email Templates</h5>
-                <p>Design and manage email templates.</p>
-            </div>
+        
+<div class="col-md-4 mb-4">
+    <div class="card shadow-sm h-100">
+        <div class="card-body text-center">
+            <h5 class="card-title">Email Templates</h5>
+
+            <p class="card-text">
+                Create and manage reusable email templates.
+            </p>
+
+            <a href="{{ url_for('main.email_templates') }}"
+               class="btn btn-primary">
+                Manage Templates
+            </a>
         </div>
+    </div>
+</div>
+
 
         <div class="col-md-4">
             <div class="card shadow-sm p-4">

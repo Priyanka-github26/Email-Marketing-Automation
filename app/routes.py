@@ -4,7 +4,7 @@ import csv
 import io
 from flask_login import login_required, current_user
 from app import db
-from app.models import Subscriber
+from app.models import Subscriber, EmailTemplate, Campaign, SequenceEmail
 
 main = Blueprint("main", __name__)
 
@@ -205,3 +205,117 @@ def import_subscribers():
             return redirect(url_for("main.import_subscribers"))
 
     return render_template("import_subscribers.html")
+
+
+# ==============================
+# EMAIL TEMPLATE MANAGEMENT
+# ==============================
+
+@main.route("/templates")
+@login_required
+def email_templates():
+
+    templates = EmailTemplate.query.filter_by(
+        user_id=current_user.id
+    ).order_by(EmailTemplate.id.desc()).all()
+
+    return render_template(
+        "email_templates.html",
+        templates=templates
+    )
+
+
+@main.route("/templates/add", methods=["GET", "POST"])
+@login_required
+def add_email_template():
+
+    if request.method == "POST":
+
+        name = request.form.get("name", "").strip()
+        subject = request.form.get("subject", "").strip()
+        body = request.form.get("body", "").strip()
+
+        if not name or not subject or not body:
+            flash("All fields are required.", "danger")
+            return redirect(url_for("main.add_email_template"))
+
+        new_template = EmailTemplate(
+            user_id=current_user.id,
+            name=name,
+            subject=subject,
+            body=body
+        )
+
+        db.session.add(new_template)
+        db.session.commit()
+
+        flash("Email template created successfully!", "success")
+
+        return redirect(url_for("main.email_templates"))
+
+    return render_template("add_email_template.html")
+
+
+@main.route("/templates/edit/<int:template_id>", methods=["GET", "POST"])
+@login_required
+def edit_email_template(template_id):
+
+    template = EmailTemplate.query.filter_by(
+        id=template_id,
+        user_id=current_user.id
+    ).first_or_404()
+
+    if request.method == "POST":
+
+        name = request.form.get("name", "").strip()
+        subject = request.form.get("subject", "").strip()
+        body = request.form.get("body", "").strip()
+
+        if not name or not subject or not body:
+            flash("All fields are required.", "danger")
+            return redirect(url_for(
+                "main.edit_email_template",
+                template_id=template.id
+            ))
+
+        template.name = name
+        template.subject = subject
+        template.body = body
+
+        db.session.commit()
+
+        flash("Email template updated successfully!", "success")
+
+        return redirect(url_for("main.email_templates"))
+
+    return render_template(
+        "edit_email_template.html",
+        template=template
+    )
+
+
+@main.route("/templates/delete/<int:template_id>", methods=["POST"])
+@login_required
+def delete_email_template(template_id):
+
+    template = EmailTemplate.query.filter_by(
+        id=template_id,
+        user_id=current_user.id
+    ).first_or_404()
+
+    # Prevent deleting templates used by campaigns or sequences
+    if Campaign.query.filter_by(template_id=template.id).first() or \
+       SequenceEmail.query.filter_by(template_id=template.id).first():
+
+        flash(
+            "This template is being used. Remove its campaign or sequence references first.",
+            "warning"
+        )
+        return redirect(url_for("main.email_templates"))
+
+    db.session.delete(template)
+    db.session.commit()
+
+    flash("Email template deleted successfully!", "success")
+
+    return redirect(url_for("main.email_templates"))
