@@ -60,3 +60,62 @@ def add_subscriber():
         return redirect(url_for("main.subscribers"))
 
     return render_template("add_subscriber.html")
+
+
+@main.route("/subscribers/edit/<int:subscriber_id>", methods=["GET", "POST"])
+@login_required
+def edit_subscriber(subscriber_id):
+    subscriber = Subscriber.query.filter_by(
+        id=subscriber_id,
+        user_id=current_user.id
+    ).first_or_404()
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+
+        if not email:
+            flash("Email address is required.", "danger")
+            return redirect(url_for(
+                "main.edit_subscriber",
+                subscriber_id=subscriber.id
+            ))
+
+        duplicate = Subscriber.query.filter(
+            Subscriber.user_id == current_user.id,
+            Subscriber.email == email,
+            Subscriber.id != subscriber.id
+        ).first()
+
+        if duplicate:
+            flash("This email is already registered.", "danger")
+            return redirect(url_for(
+                "main.edit_subscriber",
+                subscriber_id=subscriber.id
+            ))
+
+        subscriber.name = name or None
+        subscriber.email = email
+
+        db.session.commit()
+
+        flash("Subscriber updated successfully!", "success")
+        return redirect(url_for("main.subscribers"))
+
+    return render_template("edit_subscriber.html", subscriber=subscriber)
+
+
+@main.route("/subscribers/delete/<int:subscriber_id>", methods=["POST"])
+@login_required
+def delete_subscriber(subscriber_id):
+    subscriber = Subscriber.query.filter_by(
+        id=subscriber_id,
+        user_id=current_user.id
+    ).first_or_404()
+
+    db.session.delete(subscriber)
+    db.session.commit()
+
+    flash("Subscriber deleted successfully!", "success")
+    return redirect(url_for("main.subscribers"))
+
