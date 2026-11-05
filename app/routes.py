@@ -4,7 +4,16 @@ import csv
 import io
 from flask_login import login_required, current_user
 from app import db
-from app.models import Subscriber, EmailTemplate, Campaign, SequenceEmail
+from app.models import (
+    Subscriber,
+    EmailTemplate,
+    Campaign,
+    SequenceEmail,
+    CampaignRecipient,
+    CampaignOpen,
+    CampaignClick,
+    CampaignConversion
+)
 
 main = Blueprint("main", __name__)
 
@@ -444,3 +453,109 @@ def edit_campaign(campaign_id):
         campaign=campaign,
         templates=templates
     )
+
+@main.route("/campaigns/delete/<int:campaign_id>", methods=["POST"])
+@login_required
+def delete_campaign(campaign_id):
+
+    campaign = Campaign.query.filter_by(
+        id=campaign_id,
+        user_id=current_user.id
+    ).first_or_404()
+
+    try:
+        # Delete campaign tracking records first
+        CampaignOpen.query.filter_by(
+            campaign_id=campaign.id
+        ).delete(synchronize_session=False)
+
+        CampaignClick.query.filter_by(
+            campaign_id=campaign.id
+        ).delete(synchronize_session=False)
+
+        CampaignConversion.query.filter_by(
+            campaign_id=campaign.id
+        ).delete(synchronize_session=False)
+
+        CampaignRecipient.query.filter_by(
+            campaign_id=campaign.id
+        ).delete(synchronize_session=False)
+
+        # Delete campaign
+        db.session.delete(campaign)
+        db.session.commit()
+
+        flash("Campaign deleted successfully!", "success")
+
+    except Exception as e:
+        db.session.rollback()
+        print("Campaign Delete Error:", e)
+        flash("Unable to delete campaign.", "danger")
+
+    return redirect(url_for("main.campaigns"))    
+    
+@main.route("/campaigns/recipients/<int:campaign_id>", methods=["GET", "POST"])
+@login_required
+def manage_campaign_recipients(campaign_id):
+
+    campaign = Campaign.query.filter_by(
+        id=campaign_id,
+        user_id=current_user.id
+    ).first_or_404()
+
+    subscribers = Subscriber.query.filter_by(
+        user_id=current_user.id,
+        status="active"
+    ).order_by(Subscriber.id.desc()).all()
+
+    if request.method == "POST":
+
+        selected_ids = request.form.getlist("subscriber_ids")
+
+        CampaignRecipient.query.filter_by(
+            campaign_id=campaign.id
+        ).delete(synchronize_session=False)
+
+        added = 0
+
+        for subscriber_id in selected_ids:
+
+            subscriber = Subscriber.query.filter_by(
+                id=subscriber_id,
+                user_id=current_user.id,
+                status="active"
+            ).first()
+
+            if subscriber:
+                recipient = CampaignRecipient(
+                    campaign_id=campaign.id,
+                    subscriber_id=subscriber.id,
+                    status="pending"
+                )
+
+                db.session.add(recipient)
+                added += 1
+
+        db.session.commit()
+
+        flash(
+            f"{added} campaign recipients selected successfully!",
+            "success"
+        )
+
+        return redirect(url_for("main.campaigns"))
+
+    selected_ids = [
+        recipient.subscriber_id
+        for recipient in CampaignRecipient.query.filter_by(
+            campaign_id=campaign.id
+        ).all()
+    ]
+
+    return render_template(
+        "campaign_recipients.html",
+        campaign=campaign,
+        subscribers=subscribers,
+        selected_ids=selected_ids
+    )    
+    
