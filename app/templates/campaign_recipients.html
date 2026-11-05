@@ -1,0 +1,100 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign Recipients | Email Marketing Automation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark px-4">
+    <a class="navbar-brand" href="{{ url_for('main.dashboard') }}">
+        Email Marketing Automation
+    </a>
+</nav>
+
+<div class="container mt-5">
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Select Campaign Recipients</h4>
+        </div>
+
+        <div class="card-body">
+
+            <h5>{{ campaign.name }}</h5>
+            <p class="text-muted">Subject: {{ campaign.subject }}</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endwith %}
+
+            {% if subscribers %}
+
+            <form method="POST">
+
+                <p class="fw-bold">Select subscribers:</p>
+
+                <div class="mb-3">
+                    {% for subscriber in subscribers %}
+                    <div class="form-check border rounded p-3 mb-2">
+
+                        <input
+                            class="form-check-input ms-0 me-2"
+                            type="checkbox"
+                            name="subscriber_ids"
+                            value="{{ subscriber.id }}"
+                            id="subscriber{{ subscriber.id }}"
+                            {% if subscriber.id in selected_ids %}checked{% endif %}
+                        >
+
+                        <label class="form-check-label"
+                               for="subscriber{{ subscriber.id }}">
+                            <strong>{{ subscriber.name or 'No name' }}</strong>
+                            <br>
+                            <small class="text-muted">
+                                {{ subscriber.email }}
+                            </small>
+                        </label>
+
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    Save Recipients
+                </button>
+
+                <a href="{{ url_for('main.campaigns') }}"
+                   class="btn btn-secondary">
+                    Cancel
+                </a>
+
+            </form>
+
+            {% else %}
+
+                <div class="alert alert-warning">
+                    No active subscribers available. Please add subscribers first.
+                </div>
+
+                <a href="{{ url_for('main.subscribers') }}"
+                   class="btn btn-primary">
+                    Manage Subscribers
+                </a>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
