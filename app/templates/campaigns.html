@@ -22,8 +22,8 @@
 
         <div>
             <a href="{{ url_for('main.add_campaign') }}"
-                class="btn btn-primary">
-                    Create Campaign
+               class="btn btn-primary">
+                Create Campaign
             </a>
 
             <a href="{{ url_for('main.dashboard') }}"
@@ -53,6 +53,7 @@
                             <th>Subject</th>
                             <th>Status</th>
                             <th>Created At</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
 
@@ -63,11 +64,22 @@
                             <td>{{ campaign.name }}</td>
                             <td>{{ campaign.subject }}</td>
                             <td>{{ campaign.status }}</td>
-                            <td>{{ campaign.created_at.strftime('%d-%m-%Y') if campaign.created_at else '' }}</td>
+
+                            <td>
+                                {{ campaign.created_at.strftime('%d-%m-%Y') if campaign.created_at else '' }}
+                            </td>
+
+                            <td>
+                                <a href="{{ url_for('main.edit_campaign', campaign_id=campaign.id) }}"
+                                   class="btn btn-warning btn-sm">
+                                    Edit
+                                </a>
+                            </td>
                         </tr>
+
                         {% else %}
                         <tr>
-                            <td colspan="5" class="text-center">
+                            <td colspan="6" class="text-center">
                                 No campaigns created yet.
                             </td>
                         </tr>
