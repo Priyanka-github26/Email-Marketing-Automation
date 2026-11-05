@@ -386,3 +386,61 @@ def add_campaign():
         "add_campaign.html",
         templates=templates
     )
+    
+@main.route("/campaigns/edit/<int:campaign_id>", methods=["GET", "POST"])
+@login_required
+def edit_campaign(campaign_id):
+
+    campaign = Campaign.query.filter_by(
+        id=campaign_id,
+        user_id=current_user.id
+    ).first_or_404()
+
+    templates = EmailTemplate.query.filter_by(
+        user_id=current_user.id
+    ).all()
+
+    if request.method == "POST":
+
+        name = request.form.get("name", "").strip()
+        subject = request.form.get("subject", "").strip()
+        template_id = request.form.get("template_id")
+
+        if not name or not subject:
+            flash("Campaign name and subject are required.", "danger")
+            return redirect(url_for(
+                "main.edit_campaign",
+                campaign_id=campaign.id
+            ))
+
+        selected_template = None
+
+        if template_id:
+            selected_template = EmailTemplate.query.filter_by(
+                id=template_id,
+                user_id=current_user.id
+            ).first()
+
+            if not selected_template:
+                flash("Invalid email template selected.", "danger")
+                return redirect(url_for(
+                    "main.edit_campaign",
+                    campaign_id=campaign.id
+                ))
+
+        campaign.name = name
+        campaign.subject = subject
+        campaign.template_id = (
+            selected_template.id if selected_template else None
+        )
+
+        db.session.commit()
+
+        flash("Campaign updated successfully!", "success")
+        return redirect(url_for("main.campaigns"))
+
+    return render_template(
+        "edit_campaign.html",
+        campaign=campaign,
+        templates=templates
+    )
