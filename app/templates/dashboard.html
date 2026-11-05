@@ -37,11 +37,16 @@
 </div>
 
         <div class="col-md-4">
-            <div class="card shadow-sm p-4">
-                <h5>Campaigns</h5>
-                <p>Create and manage email campaigns.</p>
-            </div>
-        </div>
+    <div class="card shadow-sm p-4 h-100">
+        <h5>Campaigns</h5>
+        <p>Create and manage email campaigns.</p>
+
+        <a href="{{ url_for('main.campaigns') }}"
+           class="btn btn-primary">
+            Manage Campaigns
+        </a>
+    </div>
+</div>
 
         <div class="col-md-4">
             <div class="card shadow-sm p-4">
