@@ -21,9 +21,10 @@
         <h2>Email Campaigns</h2>
 
         <div>
-            <button class="btn btn-primary" disabled>
-                Create Campaign
-            </button>
+            <a href="{{ url_for('main.add_campaign') }}"
+                class="btn btn-primary">
+                    Create Campaign
+            </a>
 
             <a href="{{ url_for('main.dashboard') }}"
                class="btn btn-secondary">

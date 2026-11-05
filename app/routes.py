@@ -319,3 +319,70 @@ def delete_email_template(template_id):
     flash("Email template deleted successfully!", "success")
 
     return redirect(url_for("main.email_templates"))
+
+# ==============================
+# CAMPAIGN MANAGEMENT
+# ==============================
+
+@main.route("/campaigns")
+@login_required
+def campaigns():
+
+    campaigns = Campaign.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Campaign.id.desc()).all()
+
+    return render_template(
+        "campaigns.html",
+        campaigns=campaigns
+    )
+
+@main.route("/campaigns/add", methods=["GET", "POST"])
+@login_required
+def add_campaign():
+
+    templates = EmailTemplate.query.filter_by(
+        user_id=current_user.id
+    ).all()
+
+    if request.method == "POST":
+
+        name = request.form.get("name", "").strip()
+        subject = request.form.get("subject", "").strip()
+        template_id = request.form.get("template_id")
+
+        if not name or not subject:
+            flash("Campaign name and subject are required.", "danger")
+            return redirect(url_for("main.add_campaign"))
+
+        selected_template = None
+
+        if template_id:
+            selected_template = EmailTemplate.query.filter_by(
+                id=template_id,
+                user_id=current_user.id
+            ).first()
+
+            if not selected_template:
+                flash("Invalid email template selected.", "danger")
+                return redirect(url_for("main.add_campaign"))
+
+        new_campaign = Campaign(
+            user_id=current_user.id,
+            name=name,
+            subject=subject,
+            template_id=selected_template.id if selected_template else None,
+            status="draft"
+        )
+
+        db.session.add(new_campaign)
+        db.session.commit()
+
+        flash("Campaign created successfully!", "success")
+
+        return redirect(url_for("main.campaigns"))
+
+    return render_template(
+        "add_campaign.html",
+        templates=templates
+    )
