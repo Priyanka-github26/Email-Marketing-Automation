@@ -24,3 +24,39 @@ def subscribers():
         "subscribers.html",
         subscribers=subscriber_list
     )
+
+
+@main.route("/subscribers/add", methods=["GET", "POST"])
+@login_required
+def add_subscriber():
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+
+        if not email:
+            flash("Email address is required.", "danger")
+            return redirect(url_for("main.add_subscriber"))
+
+        existing_subscriber = Subscriber.query.filter_by(
+            user_id=current_user.id,
+            email=email
+        ).first()
+
+        if existing_subscriber:
+            flash("This email is already in your subscriber list.", "danger")
+            return redirect(url_for("main.add_subscriber"))
+
+        new_subscriber = Subscriber(
+            user_id=current_user.id,
+            name=name or None,
+            email=email,
+            status="active"
+        )
+
+        db.session.add(new_subscriber)
+        db.session.commit()
+
+        flash("Subscriber added successfully!", "success")
+        return redirect(url_for("main.subscribers"))
+
+    return render_template("add_subscriber.html")
