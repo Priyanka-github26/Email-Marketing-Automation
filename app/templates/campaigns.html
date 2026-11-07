@@ -56,6 +56,7 @@
                             <th>Subject</th>
                             <th>Status</th>
                             <th>Created At</th>
+                            <th>Email Opens</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -64,33 +65,39 @@
 
                         {% for campaign in campaigns %}
 
-                        <tr>
-                            <td>{{ campaign.id }}</td>
+<tr>
+    <td>{{ campaign.id }}</td>
 
-                            <td>{{ campaign.name }}</td>
+    <td>{{ campaign.name }}</td>
 
-                            <td>{{ campaign.subject }}</td>
+    <td>{{ campaign.subject }}</td>
 
-                            <td>
-                                {% if campaign.status == 'sent' %}
-    <span class="badge bg-success">Sent</span>
+    <td>
+        {% if campaign.status == 'sent' %}
+            <span class="badge bg-success">Sent</span>
 
-{% elif campaign.status == 'partially_sent' %}
-    <span class="badge bg-warning text-dark">Partially Sent</span>
+        {% elif campaign.status == 'partially_sent' %}
+            <span class="badge bg-warning text-dark">Partially Sent</span>
 
-{% elif campaign.status == 'failed' %}
-    <span class="badge bg-danger">Failed</span>
+        {% elif campaign.status == 'failed' %}
+            <span class="badge bg-danger">Failed</span>
 
-{% else %}
-    <span class="badge bg-secondary">
-        {{ campaign.status|capitalize }}
-    </span>
-{% endif %}
-                            </td>
+        {% else %}
+            <span class="badge bg-secondary">
+                {{ campaign.status|capitalize }}
+            </span>
+        {% endif %}
+    </td>
 
-                            <td>
-                                {{ campaign.created_at.strftime('%d-%m-%Y') if campaign.created_at else '' }}
-                            </td>
+    <td>
+        {{ campaign.created_at.strftime('%d-%m-%Y') if campaign.created_at else '' }}
+    </td>
+
+    <td>
+        <span class="badge bg-info text-dark">
+            {{ campaign_open_counts.get(campaign.id, 0) }}
+        </span>
+    </td>
 
                             <td>
 
@@ -148,7 +155,7 @@
                         {% else %}
 
                         <tr>
-                            <td colspan="6" class="text-center text-muted">
+                            <td colspan="7" class="text-center text-muted">
                                 No campaigns created yet.
                             </td>
                         </tr>

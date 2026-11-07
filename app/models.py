@@ -100,7 +100,6 @@ class CampaignClick(db.Model):
     link_url = db.Column(db.Text, nullable=False)
     clicked_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-
 # Conversions
 class CampaignConversion(db.Model):
     id = db.Column(db.Integer, primary_key=True)

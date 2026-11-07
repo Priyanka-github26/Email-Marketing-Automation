@@ -1,4 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from html.parser import HTMLParser
+from html import escape
 import csv
 import io
 from flask_login import login_required, current_user
@@ -407,9 +409,20 @@ def campaigns():
         user_id=current_user.id
     ).order_by(Campaign.id.desc()).all()
 
+    campaign_open_counts = {}
+
+    for campaign in campaigns:
+
+        open_count = CampaignOpen.query.filter_by(
+            campaign_id=campaign.id
+        ).count()
+
+        campaign_open_counts[campaign.id] = open_count
+
     return render_template(
         "campaigns.html",
-        campaigns=campaigns
+        campaigns=campaigns,
+        campaign_open_counts=campaign_open_counts
     )
 
 @main.route("/campaigns/add", methods=["GET", "POST"])
@@ -692,22 +705,50 @@ def send_campaign(campaign_id):
             _external=True
         )
 
-        email_body = f"""
-        <html>
-        <body>
-            {email_template.body}
+        tracking_url = url_for(
+            "main.track_email_open",
+            campaign_id=campaign.id,
+            subscriber_id=subscriber.id,
+            _external=True
+        )
 
-            <hr>
-            <p style="font-size:12px;color:gray;">
-                You received this email because you agreed to receive
-                marketing emails from us.
-            </p>
-            <p>
-                <a href="{unsubscribe_url}">Unsubscribe</a>
-            </p>
-        </body>
-        </html>
-        """
+        # Convert template links into click-tracking links
+        link_tracker = EmailLinkTracker(
+            campaign.id,
+            subscriber.id
+        )
+
+        link_tracker.feed(email_template.body)
+        tracked_template_body = link_tracker.result
+
+        email_body = f"""
+<html>
+<body>
+
+    {tracked_template_body}
+
+    <hr>
+
+    <p style="font-size:12px;color:gray;">
+        You received this email because you agreed to receive
+        marketing emails from us.
+    </p>
+
+    <p>
+        <a href="{unsubscribe_url}">Unsubscribe</a>
+    </p>
+
+    <img
+        src="{tracking_url}"
+        width="1"
+        height="1"
+        alt=""
+        style="display:none;"
+    >
+
+</body>
+</html>
+"""
 
         try:
             message = Message(
@@ -723,6 +764,7 @@ def send_campaign(campaign_id):
             sent_count += 1
 
         except Exception:
+
             recipient.status = "failed"
             failed_count += 1
 
@@ -731,7 +773,7 @@ def send_campaign(campaign_id):
                 subscriber.id
             )
 
-    # Count all successful deliveries, including earlier attempts
+    # Count all successful deliveries
     total_sent = CampaignRecipient.query.filter_by(
         campaign_id=campaign.id,
         status="sent"
@@ -743,7 +785,9 @@ def send_campaign(campaign_id):
     ).count()
 
     if remaining_failed > 0:
-        campaign.status = "partially_sent" if total_sent > 0 else "failed"
+        campaign.status = (
+            "partially_sent" if total_sent > 0 else "failed"
+        )
     else:
         campaign.status = "sent"
 
@@ -760,6 +804,7 @@ def send_campaign(campaign_id):
     )
 
     return redirect(url_for("main.campaigns"))
+
   
   
 # ==============================
@@ -865,3 +910,102 @@ def test_email():
         return redirect(url_for("main.test_email"))
 
     return render_template("test_email.html")
+
+# ==============================
+# EMAIL OPEN TRACKING
+# ==============================
+
+@main.route("/track/open/<int:campaign_id>/<int:subscriber_id>")
+def track_email_open(campaign_id, subscriber_id):
+
+    campaign = Campaign.query.filter_by(
+        id=campaign_id
+    ).first()
+
+    subscriber = Subscriber.query.filter_by(
+        id=subscriber_id
+    ).first()
+
+    if campaign and subscriber:
+
+        existing_open = CampaignOpen.query.filter_by(
+            campaign_id=campaign_id,
+            subscriber_id=subscriber_id
+        ).first()
+
+        if not existing_open:
+            new_open = CampaignOpen(
+                campaign_id=campaign_id,
+                subscriber_id=subscriber_id
+            )
+
+            db.session.add(new_open)
+            db.session.commit()
+
+    # Return a transparent 1x1 tracking pixel
+    from flask import Response
+
+    pixel = (
+        b"\x47\x49\x46\x38\x39\x61"
+        b"\x01\x00\x01\x00"
+        b"\x80\x00\x00"
+        b"\x00\x00\x00\xff\xff\xff"
+        b"\x21\xf9\x04\x01\x00\x00\x00\x00"
+        b"\x2c\x00\x00\x00\x00\x01\x00\x01\x00"
+        b"\x00\x02\x02\x44\x01\x00\x3b"
+    )
+
+    return Response(
+        pixel,
+        mimetype="image/gif",
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+    )
+    
+
+# ==============================
+# EMAIL CLICK TRACKING
+# ==============================
+
+@main.route("/track/click/<int:campaign_id>/<int:subscriber_id>")
+def track_email_click(campaign_id, subscriber_id):
+
+    from flask import abort
+    from urllib.parse import urlparse
+
+    campaign = Campaign.query.filter_by(
+        id=campaign_id
+    ).first()
+
+    subscriber = Subscriber.query.filter_by(
+        id=subscriber_id
+    ).first()
+
+    if not campaign or not subscriber:
+        abort(404)
+
+    # Verify subscriber belongs to campaign owner
+    if campaign.user_id != subscriber.user_id:
+        abort(403)
+
+    target_url = request.args.get("url", "").strip()
+
+    parsed_url = urlparse(target_url)
+
+    if (
+        parsed_url.scheme not in ("http", "https")
+        or not parsed_url.netloc
+        or parsed_url.username
+        or parsed_url.password
+    ):
+        abort(400)
+
+    new_click = CampaignClick(
+        campaign_id=campaign_id,
+        subscriber_id=subscriber_id,
+        link_url=target_url
+    )
+
+    db.session.add(new_click)
+    db.session.commit()
+
+    return redirect(target_url)
