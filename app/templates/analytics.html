@@ -85,15 +85,16 @@
         </div>
     </div>
 
-    <div class="row mt-3 mb-4">
+</div>
+
+<!-- Campaign Performance Comparison -->
+<div class="row mt-3 mb-4">
     <div class="col-12">
         <div class="card shadow-sm p-3">
             <h5 class="text-center">Campaign Performance Comparison</h5>
             <canvas id="performanceChart"></canvas>
         </div>
     </div>
-</div>
-
 </div>
 
     {% else %}
@@ -112,6 +113,11 @@
     const campaignNames = {{ campaigns | map(attribute='name') | list | tojson }};
     const openRates = {{ campaigns | map(attribute='open_rate') | list | tojson }};
     const clickRates = {{ campaigns | map(attribute='click_rate') | list | tojson }};
+    const sentCounts = {{ campaigns | map(attribute='sent') | list | tojson }};
+    const openCounts = {{ campaigns | map(attribute='opens') | list | tojson }};
+    const clickCounts = {{ campaigns | map(attribute='clicks') | list | tojson }};
+    const conversionCounts = {{ campaigns | map(attribute='conversions') | list | tojson }};
+
 
     // Open Rate Chart
     new Chart(document.getElementById('openRateChart'), {
@@ -160,6 +166,45 @@
             }
         }
     });
+
+    // Campaign Performance Comparison Chart
+    new Chart(document.getElementById('performanceChart'), {
+        type: 'bar',
+        data: {
+            labels: campaignNames,
+            datasets: [
+                {
+                    label: 'Emails Sent',
+                    data: sentCounts,
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)'
+                },
+                {
+                    label: 'Unique Opens',
+                    data: openCounts,
+                    backgroundColor: 'rgba(75, 192, 192, 0.7)'
+                },
+                {
+                    label: 'Unique Clickers',
+                    data: clickCounts,
+                    backgroundColor: 'rgba(255, 159, 64, 0.7)'
+                },
+                {
+                    label: 'Conversions',
+                    data: conversionCounts,
+                    backgroundColor: 'rgba(153, 102, 255, 0.7)'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
 </script>
 
 </body>
