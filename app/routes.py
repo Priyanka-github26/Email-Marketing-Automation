@@ -1,5 +1,4 @@
-
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 import csv
 import io
 from flask_login import login_required, current_user
@@ -82,17 +81,23 @@ def add_subscriber():
 # EDIT SUBSCRIBER
 # ==============================
 
+
 @main.route("/subscribers/edit/<int:subscriber_id>", methods=["GET", "POST"])
 @login_required
 def edit_subscriber(subscriber_id):
+
     subscriber = Subscriber.query.filter_by(
         id=subscriber_id,
         user_id=current_user.id
     ).first_or_404()
 
     if request.method == "POST":
+
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip().lower()
+
+        # Read consent checkbox
+        email_consent = request.form.get("email_consent") == "yes"
 
         if not email:
             flash("Email address is required.", "danger")
@@ -114,8 +119,18 @@ def edit_subscriber(subscriber_id):
                 subscriber_id=subscriber.id
             ))
 
+        # Update subscriber details
         subscriber.name = name or None
         subscriber.email = email
+
+        # Update email marketing consent
+        if email_consent and not subscriber.email_consent:
+            subscriber.email_consent = True
+            subscriber.consent_at = datetime.utcnow()
+
+        elif not email_consent:
+            subscriber.email_consent = False
+            subscriber.consent_at = None
 
         db.session.commit()
 
@@ -556,7 +571,8 @@ def manage_campaign_recipients(campaign_id):
 
     subscribers = Subscriber.query.filter_by(
         user_id=current_user.id,
-        status="active"
+        status="active",
+        email_consent=True
     ).order_by(Subscriber.id.desc()).all()
 
     if request.method == "POST":
@@ -574,7 +590,8 @@ def manage_campaign_recipients(campaign_id):
             subscriber = Subscriber.query.filter_by(
                 id=subscriber_id,
                 user_id=current_user.id,
-                status="active"
+                status="active",
+                email_consent=True
             ).first()
 
             if subscriber:
@@ -609,6 +626,213 @@ def manage_campaign_recipients(campaign_id):
         subscribers=subscribers,
         selected_ids=selected_ids
     )    
+
+# ==============================
+# SEND EMAIL CAMPAIGN
+# ==============================
+
+
+@main.route("/campaigns/send/<int:campaign_id>", methods=["POST"])
+@login_required
+def send_campaign(campaign_id):
+
+    campaign = Campaign.query.filter_by(
+        id=campaign_id,
+        user_id=current_user.id
+    ).first_or_404()
+
+    if campaign.status == "sent":
+        flash("This campaign has already been completed.", "warning")
+        return redirect(url_for("main.campaigns"))
+
+    if not campaign.template_id:
+        flash("Please select an email template first.", "danger")
+        return redirect(url_for("main.campaigns"))
+
+    email_template = EmailTemplate.query.filter_by(
+        id=campaign.template_id,
+        user_id=current_user.id
+    ).first()
+
+    if not email_template:
+        flash("Email template not found.", "danger")
+        return redirect(url_for("main.campaigns"))
+
+    # Process pending and previously failed recipients only
+    recipients = CampaignRecipient.query.filter(
+        CampaignRecipient.campaign_id == campaign.id,
+        CampaignRecipient.status.in_(["pending", "failed"])
+    ).all()
+
+    if not recipients:
+        flash("No pending or failed recipients available.", "warning")
+        return redirect(url_for("main.campaigns"))
+
+    sent_count = 0
+    failed_count = 0
+    skipped_count = 0
+
+    for recipient in recipients:
+
+        subscriber = Subscriber.query.filter_by(
+            id=recipient.subscriber_id,
+            user_id=current_user.id,
+            status="active",
+            email_consent=True
+        ).first()
+
+        if not subscriber:
+            recipient.status = "skipped"
+            skipped_count += 1
+            continue
+
+        unsubscribe_url = url_for(
+            "main.unsubscribe",
+            token=subscriber.unsubscribe_token,
+            _external=True
+        )
+
+        email_body = f"""
+        <html>
+        <body>
+            {email_template.body}
+
+            <hr>
+            <p style="font-size:12px;color:gray;">
+                You received this email because you agreed to receive
+                marketing emails from us.
+            </p>
+            <p>
+                <a href="{unsubscribe_url}">Unsubscribe</a>
+            </p>
+        </body>
+        </html>
+        """
+
+        try:
+            message = Message(
+                subject=campaign.subject,
+                recipients=[subscriber.email],
+                html=email_body
+            )
+
+            mail.send(message)
+
+            recipient.status = "sent"
+            recipient.sent_at = datetime.utcnow()
+            sent_count += 1
+
+        except Exception:
+            recipient.status = "failed"
+            failed_count += 1
+
+            current_app.logger.exception(
+                "Campaign email failed for subscriber %s",
+                subscriber.id
+            )
+
+    # Count all successful deliveries, including earlier attempts
+    total_sent = CampaignRecipient.query.filter_by(
+        campaign_id=campaign.id,
+        status="sent"
+    ).count()
+
+    remaining_failed = CampaignRecipient.query.filter_by(
+        campaign_id=campaign.id,
+        status="failed"
+    ).count()
+
+    if remaining_failed > 0:
+        campaign.status = "partially_sent" if total_sent > 0 else "failed"
+    else:
+        campaign.status = "sent"
+
+    if total_sent > 0 and not campaign.sent_at:
+        campaign.sent_at = datetime.utcnow()
+
+    db.session.commit()
+
+    flash(
+        f"Campaign processing completed! "
+        f"Sent: {sent_count}, Failed: {failed_count}, "
+        f"Skipped: {skipped_count}",
+        "success" if failed_count == 0 else "warning"
+    )
+
+    return redirect(url_for("main.campaigns"))
+  
+  
+# ==============================
+# SEND TEST CAMPAIGN EMAIL
+# ==============================
+
+@main.route("/campaigns/test/<int:campaign_id>", methods=["POST"])
+@login_required
+def send_test_campaign_email(campaign_id):
+
+    campaign = Campaign.query.filter_by(
+        id=campaign_id,
+        user_id=current_user.id
+    ).first_or_404()
+
+    if not campaign.template_id:
+        flash("Please select an email template first.", "danger")
+        return redirect(url_for("main.campaigns"))
+
+    email_template = EmailTemplate.query.filter_by(
+        id=campaign.template_id,
+        user_id=current_user.id
+    ).first()
+
+    if not email_template:
+        flash("Email template not found.", "danger")
+        return redirect(url_for("main.campaigns"))
+
+    test_email = current_app.config.get("MAIL_USERNAME")
+
+    if not test_email:
+        flash("Test email address is not configured.", "danger")
+        return redirect(url_for("main.campaigns"))
+
+    email_body = f"""
+    <html>
+    <body>
+        <h3>TEST EMAIL</h3>
+
+        <p>This is a test email for your campaign.</p>
+
+        <hr>
+
+        {email_template.body}
+
+        <hr>
+
+        <p style="color:gray;font-size:12px;">
+            This is a test message. It was not sent to your subscribers.
+        </p>
+    </body>
+    </html>
+    """
+
+    try:
+        message = Message(
+            subject=f"[TEST] {campaign.subject}",
+            recipients=[test_email],
+            html=email_body
+        )
+
+        mail.send(message)
+
+        flash(
+            "Test email sent successfully to your configured Gmail address!",
+            "success"
+        )
+
+    except Exception:
+        current_app.logger.exception("Test campaign email failed")
+        flash("Unable to send test email. Check the application logs.", "danger")
+
+    return redirect(url_for("main.campaigns"))
 
 @main.route("/test-email", methods=["GET", "POST"])
 @login_required

@@ -24,6 +24,7 @@
             {% endwith %}
 
             <form method="POST">
+
                 <div class="mb-3">
                     <label class="form-label">Full Name</label>
                     <input
@@ -45,6 +46,22 @@
                     >
                 </div>
 
+                <div class="form-check mb-3">
+                    <input
+                        type="checkbox"
+                        name="email_consent"
+                        value="yes"
+                        class="form-check-input"
+                        id="email_consent"
+                        {% if subscriber.email_consent %}checked{% endif %}
+                    >
+
+                    <label class="form-check-label" for="email_consent">
+                        I confirm that this subscriber has agreed to receive
+                        marketing emails.
+                    </label>
+                </div>
+
                 <button type="submit" class="btn btn-primary">
                     Update Subscriber
                 </button>
@@ -53,6 +70,7 @@
                    class="btn btn-secondary">
                     Cancel
                 </a>
+
             </form>
 
         </div>
