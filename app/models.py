@@ -1,6 +1,7 @@
 from datetime import datetime
 from flask_login import UserMixin
 from app import db
+import secrets
 
 # User Account
 class User(UserMixin, db.Model):
@@ -10,7 +11,6 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-
 # Subscriber
 class Subscriber(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -18,8 +18,21 @@ class Subscriber(db.Model):
     email = db.Column(db.String(120), nullable=False)
     name = db.Column(db.String(100))
     status = db.Column(db.String(20), default="active")
-    subscribed_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Email marketing consent
+    email_consent = db.Column(db.Boolean, default=False, nullable=False)
+    consent_at = db.Column(db.DateTime, nullable=True)
+    unsubscribed_at = db.Column(db.DateTime, nullable=True)
+
+    # Secure unsubscribe token
+    unsubscribe_token = db.Column(
+        db.String(64),
+        unique=True,
+        nullable=True,
+        default=lambda: secrets.token_urlsafe(32)
+    )
+
+    subscribed_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # Segment
 class Segment(db.Model):

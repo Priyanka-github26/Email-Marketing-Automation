@@ -240,6 +240,34 @@ def import_subscribers():
 
 
 # ==============================
+# SECURE UNSUBSCRIBE
+# ==============================
+
+@main.route("/unsubscribe/<string:token>", methods=["GET", "POST"])
+def unsubscribe(token):
+
+    subscriber = Subscriber.query.filter_by(
+        unsubscribe_token=token
+    ).first_or_404()
+
+    if request.method == "POST":
+
+        if subscriber.status != "unsubscribed":
+            subscriber.email_consent = False
+            subscriber.status = "unsubscribed"
+            subscriber.unsubscribed_at = datetime.utcnow()
+
+            db.session.commit()
+
+        return render_template("unsubscribe_success.html")
+
+    return render_template(
+        "unsubscribe.html",
+        subscriber=subscriber
+    )
+
+
+# ==============================
 # EMAIL TEMPLATE MANAGEMENT
 # ==============================
 
