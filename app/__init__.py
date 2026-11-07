@@ -4,11 +4,12 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
 from config import Config
+from flask_mail import Mail
 
 db = SQLAlchemy()
 bcrypt = Bcrypt()
 login_manager = LoginManager()
-
+mail = Mail()
 
 def create_app():
     app = Flask(__name__)
@@ -20,6 +21,8 @@ def create_app():
 
     login_manager.login_view = "auth.login"
     login_manager.login_message = "Please log in to access this page."
+
+    mail.init_app(app)
 
     @login_manager.user_loader
     def load_user(user_id):
