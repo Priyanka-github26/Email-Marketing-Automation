@@ -5,6 +5,7 @@ import io
 from flask_login import login_required, current_user
 from flask_mail import Message
 from app import db, mail
+from datetime import datetime
 from app.models import (
     Subscriber,
     EmailTemplate,
@@ -24,7 +25,6 @@ main = Blueprint("main", __name__)
 def dashboard():
     return render_template("dashboard.html", user=current_user)
 
-
 @main.route("/subscribers")
 @login_required
 def subscribers():
@@ -37,13 +37,15 @@ def subscribers():
         subscribers=subscriber_list
     )
 
-
 @main.route("/subscribers/add", methods=["GET", "POST"])
 @login_required
 def add_subscriber():
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip().lower()
+
+        # Check email consent
+        email_consent = request.form.get("email_consent") == "yes"
 
         if not email:
             flash("Email address is required.", "danger")
@@ -62,7 +64,9 @@ def add_subscriber():
             user_id=current_user.id,
             name=name or None,
             email=email,
-            status="active"
+            status="active",
+            email_consent=email_consent,
+            consent_at=datetime.utcnow() if email_consent else None
         )
 
         db.session.add(new_subscriber)
@@ -73,6 +77,10 @@ def add_subscriber():
 
     return render_template("add_subscriber.html")
 
+
+# ==============================
+# EDIT SUBSCRIBER
+# ==============================
 
 @main.route("/subscribers/edit/<int:subscriber_id>", methods=["GET", "POST"])
 @login_required
@@ -114,8 +122,15 @@ def edit_subscriber(subscriber_id):
         flash("Subscriber updated successfully!", "success")
         return redirect(url_for("main.subscribers"))
 
-    return render_template("edit_subscriber.html", subscriber=subscriber)
+    return render_template(
+        "edit_subscriber.html",
+        subscriber=subscriber
+    )
 
+
+# ==============================
+# DELETE SUBSCRIBER
+# ==============================
 
 @main.route("/subscribers/delete/<int:subscriber_id>", methods=["POST"])
 @login_required
@@ -132,12 +147,15 @@ def delete_subscriber(subscriber_id):
     return redirect(url_for("main.subscribers"))
 
 
+# ==============================
+# IMPORT SUBSCRIBERS
+# ==============================
+
 @main.route("/subscribers/import", methods=["GET", "POST"])
 @login_required
 def import_subscribers():
 
     if request.method == "POST":
-
         file = request.files.get("file")
 
         if not file or file.filename == "":
@@ -151,7 +169,6 @@ def import_subscribers():
         try:
             content = file.stream.read().decode("utf-8-sig")
             csv_file = io.StringIO(content)
-
             reader = csv.DictReader(csv_file)
 
             if not reader.fieldnames or not {"name", "email"}.issubset(
@@ -189,7 +206,9 @@ def import_subscribers():
                     user_id=current_user.id,
                     name=name or None,
                     email=email,
-                    status="active"
+                    status="active",
+                    email_consent=False,
+                    consent_at=None
                 )
 
                 db.session.add(subscriber)
@@ -211,7 +230,10 @@ def import_subscribers():
 
         except Exception:
             db.session.rollback()
-            flash("Import failed. Please check your CSV file and try again.", "danger")
+            flash(
+                "Import failed. Please check your CSV file and try again.",
+                "danger"
+            )
             return redirect(url_for("main.import_subscribers"))
 
     return render_template("import_subscribers.html")
