@@ -3,7 +3,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 import csv
 import io
 from flask_login import login_required, current_user
-from app import db
+from flask_mail import Message
+from app import db, mail
 from app.models import (
     Subscriber,
     EmailTemplate,
@@ -558,4 +559,35 @@ def manage_campaign_recipients(campaign_id):
         subscribers=subscribers,
         selected_ids=selected_ids
     )    
-    
+
+@main.route("/test-email", methods=["GET", "POST"])
+@login_required
+def test_email():
+
+    if request.method == "POST":
+
+        recipient = request.form.get("email", "").strip()
+
+        if not recipient:
+            flash("Please enter an email address.", "danger")
+
+        else:
+            try:
+                msg = Message(
+                    subject="Email Marketing Automation - Test Email",
+                    recipients=[recipient],
+                    body="Congratulations! Your email configuration is working successfully."
+                )
+
+                mail.send(msg)
+
+                flash("Test email sent successfully!", "success")
+
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                flash(f"Email sending failed: {str(e)}", "danger")
+        
+        return redirect(url_for("main.test_email"))
+
+    return render_template("test_email.html")
