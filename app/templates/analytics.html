@@ -68,6 +68,25 @@
         </div>
     </div>
 
+    <!-- Campaign Performance Charts -->
+<div class="row mt-4">
+
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm p-3">
+            <h5 class="text-center">Campaign Open Rate</h5>
+            <canvas id="openRateChart"></canvas>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm p-3">
+            <h5 class="text-center">Campaign Click Rate</h5>
+            <canvas id="clickRateChart"></canvas>
+        </div>
+    </div>
+
+</div>
+
     {% else %}
 
     <div class="alert alert-info">
@@ -77,6 +96,62 @@
     {% endif %}
 
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const campaignNames = {{ campaigns | map(attribute='name') | list | tojson }};
+    const openRates = {{ campaigns | map(attribute='open_rate') | list | tojson }};
+    const clickRates = {{ campaigns | map(attribute='click_rate') | list | tojson }};
+
+    // Open Rate Chart
+    new Chart(document.getElementById('openRateChart'), {
+        type: 'bar',
+        data: {
+            labels: campaignNames,
+            datasets: [{
+                label: 'Open Rate (%)',
+                data: openRates,
+                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                borderColor: 'rgb(54, 162, 235)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+
+    // Click Rate Chart
+    new Chart(document.getElementById('clickRateChart'), {
+        type: 'bar',
+        data: {
+            labels: campaignNames,
+            datasets: [{
+                label: 'Click Rate (%)',
+                data: clickRates,
+                backgroundColor: 'rgba(255, 159, 64, 0.7)',
+                borderColor: 'rgb(255, 159, 64)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+</script>
 
 </body>
 </html>
