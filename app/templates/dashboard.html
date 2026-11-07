@@ -20,74 +20,127 @@
 </nav>
 
 <div class="container mt-5">
-    <h2 class="mb-4">Dashboard</h2>
-    <p>Welcome to your Email Marketing Automation Platform!</p>
 
-    
-<div class="col-md-4">
-    <div class="card shadow-sm p-4 h-100">
-        <h5>Subscribers</h5>
-        <p>Manage your email subscribers.</p>
+    <h2 class="mb-2">Dashboard</h2>
+    <p class="text-muted">Welcome to your Email Marketing Automation Platform!</p>
 
-        <a href="{{ url_for('main.subscribers') }}"
-           class="btn btn-primary">
-            Manage Subscribers
-        </a>
-    </div>
-</div>
+    <!-- Analytics Summary -->
+    <h4 class="mt-4 mb-3">Campaign Analytics</h4>
 
-        <div class="col-md-4">
-    <div class="card shadow-sm p-4 h-100">
-        <h5>Campaigns</h5>
-        <p>Create and manage email campaigns.</p>
+    <div class="row g-3 mb-5">
 
-        <a href="{{ url_for('main.campaigns') }}"
-           class="btn btn-primary">
-            Manage Campaigns
-        </a>
-    </div>
-</div>
-
-        <div class="col-md-4">
-            <div class="card shadow-sm p-4">
-                <h5>Analytics</h5>
-                <p>Track email campaign performance.</p>
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3 h-100">
+                <h6 class="text-muted">Total Campaigns</h6>
+                <h3>{{ total_campaigns }}</h3>
             </div>
         </div>
 
-        
-<div class="col-md-4 mb-4">
-    <div class="card shadow-sm h-100">
-        <div class="card-body text-center">
-            <h5 class="card-title">Email Templates</h5>
-
-            <p class="card-text">
-                Create and manage reusable email templates.
-            </p>
-
-            <a href="{{ url_for('main.email_templates') }}"
-               class="btn btn-primary">
-                Manage Templates
-            </a>
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3 h-100">
+                <h6 class="text-muted">Emails Sent</h6>
+                <h3>{{ total_sent }}</h3>
+            </div>
         </div>
-    </div>
-</div>
 
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3 h-100">
+                <h6 class="text-muted">Email Opens</h6>
+                <h3>{{ total_opens }}</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3 h-100">
+                <h6 class="text-muted">Email Clicks</h6>
+                <h3>{{ total_clicks }}</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3 h-100">
+                <h6 class="text-muted">Open Rate</h6>
+                <h3>{{ open_rate }}%</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3 h-100">
+                <h6 class="text-muted">Click Rate</h6>
+                <h3>{{ click_rate }}%</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3 h-100">
+                <h6 class="text-muted">Conversions</h6>
+                <h3>{{ total_conversions }}</h3>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Main Navigation -->
+    <h4 class="mb-3">Manage Your Platform</h4>
+
+    <div class="row g-4">
 
         <div class="col-md-4">
-            <div class="card shadow-sm p-4">
+            <div class="card shadow-sm p-4 h-100">
+                <h5>Subscribers</h5>
+                <p>Manage your email subscribers.</p>
+                <a href="{{ url_for('main.subscribers') }}" class="btn btn-primary">
+                    Manage Subscribers
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm p-4 h-100">
+                <h5>Campaigns</h5>
+                <p>Create and manage email campaigns.</p>
+                <a href="{{ url_for('main.campaigns') }}" class="btn btn-primary">
+                    Manage Campaigns
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm p-4 h-100">
+                <h5>Analytics</h5>
+                <p>Track email campaign performance.</p>
+                <a href="#analytics" class="btn btn-primary">
+                    View Analytics
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm p-4 h-100">
+                <h5>Email Templates</h5>
+                <p>Create and manage reusable email templates.</p>
+                <a href="{{ url_for('main.email_templates') }}" class="btn btn-primary">
+                    Manage Templates
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm p-4 h-100">
                 <h5>Automation</h5>
                 <p>Manage automated email sequences.</p>
             </div>
         </div>
 
         <div class="col-md-4">
-            <div class="card shadow-sm p-4">
+            <div class="card shadow-sm p-4 h-100">
                 <h5>Segments</h5>
                 <p>Organize subscribers into groups.</p>
             </div>
         </div>
+
     </div>
+
 </div>
 
 </body>

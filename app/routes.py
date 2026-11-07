@@ -24,7 +24,135 @@ main = Blueprint("main", __name__)
 @main.route("/dashboard")
 @login_required
 def dashboard():
-    return render_template("dashboard.html", user=current_user)
+
+    campaigns = Campaign.query.filter_by(
+        user_id=current_user.id
+    ).all()
+
+    total_campaigns = len(campaigns)
+
+    total_sent = CampaignRecipient.query.join(
+        Campaign,
+        CampaignRecipient.campaign_id == Campaign.id
+    ).filter(
+        Campaign.user_id == current_user.id,
+        CampaignRecipient.status == "sent"
+    ).count()
+
+    total_opens = CampaignOpen.query.join(
+        Campaign,
+        CampaignOpen.campaign_id == Campaign.id
+    ).filter(
+        Campaign.user_id == current_user.id
+    ).count()
+
+    total_clicks = CampaignClick.query.join(
+        Campaign,
+        CampaignClick.campaign_id == Campaign.id
+    ).filter(
+        Campaign.user_id == current_user.id
+    ).count()
+
+    unique_opens = CampaignOpen.query.join(
+        Campaign,
+        CampaignOpen.campaign_id == Campaign.id
+    ).filter(
+        Campaign.user_id == current_user.id
+    ).with_entities(
+        CampaignOpen.campaign_id,
+        CampaignOpen.subscriber_id
+    ).distinct().count()
+
+    unique_clickers = CampaignClick.query.join(
+        Campaign,
+        CampaignClick.campaign_id == Campaign.id
+    ).filter(
+        Campaign.user_id == current_user.id
+    ).with_entities(
+        CampaignClick.campaign_id,
+        CampaignClick.subscriber_id
+    ).distinct().count()
+
+    total_conversions = CampaignConversion.query.join(
+        Campaign,
+        CampaignConversion.campaign_id == Campaign.id
+    ).filter(
+        Campaign.user_id == current_user.id
+    ).count()
+
+    open_rate = (
+        (unique_opens / total_sent) * 100
+        if total_sent > 0 else 0
+    )
+
+    click_rate = (
+        (unique_clickers / total_sent) * 100
+        if total_sent > 0 else 0
+    )
+
+    return render_template(
+        "dashboard.html",
+        user=current_user,
+        total_campaigns=total_campaigns,
+        total_sent=total_sent,
+        total_opens=total_opens,
+        total_clicks=total_clicks,
+        total_conversions=total_conversions,
+        open_rate=round(open_rate, 2),
+        click_rate=round(click_rate, 2)
+    )
+
+@main.route("/analytics")
+@login_required
+def analytics():
+
+    campaigns = Campaign.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Campaign.created_at.desc()).all()
+
+    campaign_analytics = []
+
+    for campaign in campaigns:
+
+        sent = CampaignRecipient.query.filter_by(
+            campaign_id=campaign.id,
+            status="sent"
+        ).count()
+
+        opens = CampaignOpen.query.filter_by(
+            campaign_id=campaign.id
+        ).with_entities(
+            CampaignOpen.subscriber_id
+        ).distinct().count()
+
+        clicks = CampaignClick.query.filter_by(
+            campaign_id=campaign.id
+        ).with_entities(
+            CampaignClick.subscriber_id
+        ).distinct().count()
+
+        conversions = CampaignConversion.query.filter_by(
+            campaign_id=campaign.id
+        ).count()
+
+        open_rate = (opens / sent * 100) if sent else 0
+        click_rate = (clicks / sent * 100) if sent else 0
+
+        campaign_analytics.append({
+            "name": campaign.name,
+            "status": campaign.status,
+            "sent": sent,
+            "opens": opens,
+            "clicks": clicks,
+            "conversions": conversions,
+            "open_rate": round(open_rate, 2),
+            "click_rate": round(click_rate, 2)
+        })
+
+    return render_template(
+        "analytics.html",
+        campaigns=campaign_analytics
+    )
 
 @main.route("/subscribers")
 @login_required
@@ -644,6 +772,71 @@ def manage_campaign_recipients(campaign_id):
 # SEND EMAIL CAMPAIGN
 # ==============================
 
+class EmailLinkTracker(HTMLParser):
+
+    def __init__(self, campaign_id, subscriber_id):
+        super().__init__(convert_charrefs=False)
+        self.campaign_id = campaign_id
+        self.subscriber_id = subscriber_id
+        self.result = ""
+
+    def handle_starttag(self, tag, attrs):
+
+        updated_attrs = []
+
+        for name, value in attrs:
+
+            if tag.lower() == "a" and name.lower() == "href" and value:
+                value = url_for(
+                    "main.track_email_click",
+                    campaign_id=self.campaign_id,
+                    subscriber_id=self.subscriber_id,
+                    url=value,
+                    _external=True
+                )
+
+            updated_attrs.append((name, value))
+
+        attrs_text = "".join(
+            f' {name}="{escape(value or "", quote=True)}"'
+            for name, value in updated_attrs
+        )
+
+        self.result += f"<{tag}{attrs_text}>"
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
+        self.result = self.result[:-1] + " />"
+
+    def handle_endtag(self, tag):
+        self.result += f"</{tag}>"
+
+    def handle_data(self, data):
+        self.result += data
+
+    def handle_entityref(self, name):
+        self.result += f"&{name};"
+
+    def handle_charref(self, name):
+        self.result += f"&#{name};"
+
+    def handle_comment(self, data):
+        self.result += f"<!--{data}-->"
+
+@main.route("/test-link-tracking")
+@login_required
+def test_link_tracking():
+
+    tracker = EmailLinkTracker(5, 12)
+
+    tracker.feed(
+        '<a href="https://www.google.com">Visit Google</a>'
+    )
+
+    return f"""
+    <h3>Tracking Test</h3>
+    <p>{tracker.result}</p>
+    """
 
 @main.route("/campaigns/send/<int:campaign_id>", methods=["POST"])
 @login_required
