@@ -23,6 +23,11 @@ A web-based Email Marketing Automation Platform built using Python Flask and MyS
 
 ![Email Marketing Automation Dashboard](screenshots/dashboard.png)
 
+### Campaign Analytics
+
+![Email Marketing Automation Analytics](screenshots/analytics.png)
+
+
 ## Technologies Used
 
 | Category | Technology |
