@@ -1202,3 +1202,86 @@ def track_email_click(campaign_id, subscriber_id):
     db.session.commit()
 
     return redirect(target_url)
+
+
+from io import StringIO
+from flask import Response
+
+@main.route("/reports")
+@login_required
+def reports():
+
+    campaigns = Campaign.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Campaign.created_at.desc()).all()
+
+    return render_template(
+        "reports.html",
+        campaigns=campaigns
+    )
+    
+@main.route("/download-reports")
+@login_required
+def download_reports():
+
+    campaigns = Campaign.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Campaign.created_at.desc()).all()
+
+    output = StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow([
+        "Campaign Name",
+        "Subject",
+        "Status",
+        "Created At",
+        "Emails Sent",
+        "Unique Opens",
+        "Unique Clickers",
+        "Conversions"
+    ])
+
+    for campaign in campaigns:
+
+        sent = CampaignRecipient.query.filter_by(
+            campaign_id=campaign.id,
+            status="sent"
+        ).count()
+
+        opens = CampaignOpen.query.filter_by(
+            campaign_id=campaign.id
+        ).with_entities(
+            CampaignOpen.subscriber_id
+        ).distinct().count()
+
+        clicks = CampaignClick.query.filter_by(
+            campaign_id=campaign.id
+        ).with_entities(
+            CampaignClick.subscriber_id
+        ).distinct().count()
+
+        conversions = CampaignConversion.query.filter_by(
+            campaign_id=campaign.id
+        ).count()
+
+        writer.writerow([
+            campaign.name,
+            campaign.subject,
+            campaign.status,
+            campaign.created_at,
+            sent,
+            opens,
+            clicks,
+            conversions
+        ])
+
+    output.seek(0)
+
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=campaign_reports.csv"
+        }
+    )
