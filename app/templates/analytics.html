@@ -1,40 +1,157 @@
-
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Campaign Analytics</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <title>Campaign Analytics | EmailFlow</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <style>
+        body {
+            background: #f4f6fb;
+            font-family: Arial, sans-serif;
+        }
+
+        .navbar {
+            background: #101c3a;
+            padding: 16px 30px;
+        }
+
+        .navbar-brand {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .page-header {
+            background: white;
+            padding: 24px 28px;
+            border-radius: 14px;
+            margin-bottom: 25px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.04);
+        }
+
+        .page-title {
+            color: #172554;
+            font-weight: 700;
+        }
+
+        .main-card {
+            background: white;
+            border: none;
+            border-radius: 14px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .chart-card {
+            padding: 22px;
+            height: 100%;
+        }
+
+        .chart-title {
+            color: #172554;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .table thead th {
+            background: #172554;
+            color: white;
+            font-size: 13px;
+            padding: 15px;
+            white-space: nowrap;
+        }
+
+        .table tbody td {
+            padding: 14px;
+            vertical-align: middle;
+            color: #475569;
+        }
+
+        .table tbody tr:hover {
+            background: #f8faff;
+        }
+
+        .table-responsive {
+            border-radius: 8px;
+        }
+
+        .chart-container {
+            position: relative;
+            min-height: 280px;
+        }
+
+        .performance-container {
+            min-height: 350px;
+        }
+
+        .section-title {
+            color: #172554;
+            font-weight: 700;
+        }
+    </style>
 </head>
 
-<body class="bg-light">
+<body>
 
-<nav class="navbar navbar-dark bg-dark px-4">
-    <a class="navbar-brand" href="{{ url_for('main.dashboard') }}">
-        Email Marketing Automation
-    </a>
-    <a href="{{ url_for('main.dashboard') }}" class="btn btn-light btn-sm">
-        Back to Dashboard
-    </a>
+<!-- Navigation -->
+<nav class="navbar navbar-dark">
+    <div class="container-fluid">
+
+        <a class="navbar-brand" href="{{ url_for('main.dashboard') }}">
+            ✉ EmailFlow
+        </a>
+
+        <a href="{{ url_for('main.dashboard') }}"
+           class="btn btn-outline-light btn-sm">
+            Back to Dashboard
+        </a>
+
+    </div>
 </nav>
 
-<div class="container mt-5">
+<div class="container-fluid px-4 px-md-5 py-4">
 
-    <h2 class="mb-2">Campaign Analytics</h2>
-    <p class="text-muted mb-4">
-        View the performance of your email campaigns.
-    </p>
+    <!-- Page Header -->
+    <div class="page-header">
+
+        <h2 class="page-title mb-2">
+            Campaign Analytics
+        </h2>
+
+        <p class="text-muted mb-0">
+            Monitor email campaign performance, engagement and conversions.
+        </p>
+
+    </div>
 
     {% if campaigns %}
 
-    <div class="card shadow-sm">
-        <div class="card-body">
+    <!-- Campaign Performance Table -->
+    <div class="card main-card mb-4">
+
+        <div class="card-body p-3 p-md-4">
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+
+                <h5 class="section-title mb-0">
+                    Campaign Performance
+                </h5>
+
+                <span class="badge bg-primary">
+                    {{ campaigns|length }} Campaigns
+                </span>
+
+            </div>
 
             <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle">
 
-                    <thead class="table-dark">
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead>
                         <tr>
                             <th>Campaign</th>
                             <th>Status</th>
@@ -48,68 +165,157 @@
                     </thead>
 
                     <tbody>
+
                         {% for campaign in campaigns %}
+
                         <tr>
-                            <td>{{ campaign.name }}</td>
-                            <td>{{ campaign.status }}</td>
+
+                            <td class="fw-semibold">
+                                {{ campaign.name }}
+                            </td>
+
+                            <td>
+                                {% if campaign.status == 'sent' %}
+                                    <span class="badge bg-success">
+                                        Sent
+                                    </span>
+                                {% elif campaign.status == 'failed' %}
+                                    <span class="badge bg-danger">
+                                        Failed
+                                    </span>
+                                {% elif campaign.status == 'partially_sent' %}
+                                    <span class="badge bg-warning text-dark">
+                                        Partially Sent
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                        {{ campaign.status|capitalize }}
+                                    </span>
+                                {% endif %}
+                            </td>
+
                             <td>{{ campaign.sent }}</td>
+
                             <td>{{ campaign.opens }}</td>
+
                             <td>{{ campaign.clicks }}</td>
-                            <td>{{ campaign.open_rate }}%</td>
-                            <td>{{ campaign.click_rate }}%</td>
+
+                            <td>
+                                <span class="text-primary fw-semibold">
+                                    {{ campaign.open_rate }}%
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="text-success fw-semibold">
+                                    {{ campaign.click_rate }}%
+                                </span>
+                            </td>
+
                             <td>{{ campaign.conversions }}</td>
+
                         </tr>
+
                         {% endfor %}
+
                     </tbody>
 
                 </table>
+
             </div>
 
         </div>
+
     </div>
 
-    <!-- Campaign Performance Charts -->
-<div class="row mt-4">
+    <!-- Open Rate and Click Rate Charts -->
+    <h5 class="section-title mb-3">
+        Engagement Analytics
+    </h5>
 
-    <div class="col-md-6 mb-4">
-        <div class="card shadow-sm p-3">
-            <h5 class="text-center">Campaign Open Rate</h5>
-            <canvas id="openRateChart"></canvas>
+    <div class="row g-4 mb-4">
+
+        <div class="col-lg-6">
+
+            <div class="card main-card chart-card">
+
+                <h5 class="chart-title text-center">
+                    Campaign Open Rate
+                </h5>
+
+                <div class="chart-container">
+                    <canvas id="openRateChart"></canvas>
+                </div>
+
+            </div>
+
         </div>
-    </div>
 
-    <div class="col-md-6 mb-4">
-        <div class="card shadow-sm p-3">
-            <h5 class="text-center">Campaign Click Rate</h5>
-            <canvas id="clickRateChart"></canvas>
+        <div class="col-lg-6">
+
+            <div class="card main-card chart-card">
+
+                <h5 class="chart-title text-center">
+                    Campaign Click Rate
+                </h5>
+
+                <div class="chart-container">
+                    <canvas id="clickRateChart"></canvas>
+                </div>
+
+            </div>
+
         </div>
+
     </div>
 
-</div>
+    <!-- Performance Comparison -->
+    <h5 class="section-title mb-3">
+        Overall Campaign Comparison
+    </h5>
 
-<!-- Campaign Performance Comparison -->
-<div class="row mt-3 mb-4">
-    <div class="col-12">
-        <div class="card shadow-sm p-3">
-            <h5 class="text-center">Campaign Performance Comparison</h5>
+    <div class="card main-card chart-card mb-4">
+
+        <h5 class="chart-title text-center">
+            Campaign Performance Comparison
+        </h5>
+
+        <div class="chart-container performance-container">
             <canvas id="performanceChart"></canvas>
         </div>
+
     </div>
-</div>
 
     {% else %}
 
-    <div class="alert alert-info">
-        No campaigns available. Create your first campaign to view analytics.
+    <div class="card main-card text-center p-5">
+
+        <h5 class="text-secondary">
+            No Campaign Analytics Available
+        </h5>
+
+        <p class="text-muted">
+            Create your first campaign to start monitoring its performance.
+        </p>
+
+        <div>
+            <a href="{{ url_for('main.add_campaign') }}"
+               class="btn btn-primary">
+                + Create Campaign
+            </a>
+        </div>
+
     </div>
 
     {% endif %}
 
 </div>
 
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
+
     const campaignNames = {{ campaigns | map(attribute='name') | list | tojson }};
     const openRates = {{ campaigns | map(attribute='open_rate') | list | tojson }};
     const clickRates = {{ campaigns | map(attribute='click_rate') | list | tojson }};
@@ -118,26 +324,43 @@
     const clickCounts = {{ campaigns | map(attribute='clicks') | list | tojson }};
     const conversionCounts = {{ campaigns | map(attribute='conversions') | list | tojson }};
 
+    {% if campaigns %}
 
     // Open Rate Chart
     new Chart(document.getElementById('openRateChart'), {
         type: 'bar',
+
         data: {
             labels: campaignNames,
+
             datasets: [{
                 label: 'Open Rate (%)',
                 data: openRates,
                 backgroundColor: 'rgba(54, 162, 235, 0.7)',
                 borderColor: 'rgb(54, 162, 235)',
-                borderWidth: 1
+                borderWidth: 1,
+                borderRadius: 6
             }]
         },
+
         options: {
             responsive: true,
+            maintainAspectRatio: false,
+
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            },
+
             scales: {
                 y: {
                     beginAtZero: true,
-                    max: 100
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Open Rate (%)'
+                    }
                 }
             }
         }
@@ -146,32 +369,50 @@
     // Click Rate Chart
     new Chart(document.getElementById('clickRateChart'), {
         type: 'bar',
+
         data: {
             labels: campaignNames,
+
             datasets: [{
                 label: 'Click Rate (%)',
                 data: clickRates,
                 backgroundColor: 'rgba(255, 159, 64, 0.7)',
                 borderColor: 'rgb(255, 159, 64)',
-                borderWidth: 1
+                borderWidth: 1,
+                borderRadius: 6
             }]
         },
+
         options: {
             responsive: true,
+            maintainAspectRatio: false,
+
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            },
+
             scales: {
                 y: {
                     beginAtZero: true,
-                    max: 100
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Click Rate (%)'
+                    }
                 }
             }
         }
     });
 
-    // Campaign Performance Comparison Chart
+    // Campaign Performance Comparison
     new Chart(document.getElementById('performanceChart'), {
         type: 'bar',
+
         data: {
             labels: campaignNames,
+
             datasets: [
                 {
                     label: 'Emails Sent',
@@ -195,17 +436,33 @@
                 }
             ]
         },
+
         options: {
             responsive: true,
+            maintainAspectRatio: false,
+
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            },
+
             scales: {
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Count'
+                    }
                 }
             }
         }
     });
 
+    {% endif %}
+
 </script>
 
 </body>
 </html>
+```
