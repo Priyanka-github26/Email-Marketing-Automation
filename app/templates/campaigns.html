@@ -1,55 +1,163 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Campaigns | Email Marketing Automation</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <title>Campaigns | EmailFlow</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <style>
+        body {
+            background: #f4f6fb;
+            font-family: Arial, sans-serif;
+        }
+
+        .navbar {
+            background: #101c3a;
+            padding: 16px 30px;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 20px;
+        }
+
+        .page-header {
+            background: white;
+            padding: 24px 28px;
+            border-radius: 14px;
+            margin-bottom: 25px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.04);
+        }
+
+        .page-title {
+            color: #172554;
+            font-weight: 700;
+        }
+
+        .main-card {
+            border: none;
+            border-radius: 14px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: #172554;
+            color: white;
+            padding: 17px 22px;
+            font-weight: 600;
+        }
+
+        .table thead th {
+            background: #f1f5f9;
+            color: #334155;
+            font-size: 13px;
+            padding: 15px;
+            white-space: nowrap;
+        }
+
+        .table tbody td {
+            padding: 14px;
+            vertical-align: middle;
+            color: #475569;
+        }
+
+        .table tbody tr:hover {
+            background: #f8faff;
+        }
+
+        .btn {
+            border-radius: 7px;
+            font-weight: 500;
+        }
+
+        .status-badge {
+            padding: 6px 11px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .empty-state {
+            padding: 45px 20px;
+        }
+
+        .action-buttons {
+            min-width: 270px;
+        }
+    </style>
 </head>
 
-<body class="bg-light">
+<body>
 
-<nav class="navbar navbar-dark bg-dark px-4">
-    <a class="navbar-brand" href="{{ url_for('main.dashboard') }}">
-        Email Marketing Automation
-    </a>
+<!-- Navigation -->
+<nav class="navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('main.dashboard') }}">
+            ✉ EmailFlow
+        </a>
+
+        <a href="{{ url_for('main.dashboard') }}"
+           class="btn btn-outline-light btn-sm">
+            Dashboard
+        </a>
+    </div>
 </nav>
 
-<div class="container mt-5">
+<div class="container-fluid px-4 px-md-5 py-4">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Email Campaigns</h2>
+    <!-- Page Header -->
+    <div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-3">
 
         <div>
-            <a href="{{ url_for('main.add_campaign') }}"
-               class="btn btn-primary">
-                Create Campaign
-            </a>
+            <h2 class="page-title mb-1">Email Campaigns</h2>
 
-            <a href="{{ url_for('main.dashboard') }}"
-               class="btn btn-secondary">
-                Dashboard
-            </a>
+            <p class="text-muted mb-0">
+                Create, manage and monitor your email marketing campaigns
+            </p>
         </div>
+
+        <a href="{{ url_for('main.add_campaign') }}"
+           class="btn btn-primary px-4">
+            + Create Campaign
+        </a>
+
     </div>
 
+    <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% for category, message in messages %}
             <div class="alert alert-{{ category }} alert-dismissible fade show">
                 {{ message }}
+
                 <button type="button" class="btn-close"
                         data-bs-dismiss="alert"></button>
             </div>
         {% endfor %}
     {% endwith %}
 
-    <div class="card shadow-sm">
-        <div class="card-body">
+    <!-- Campaign Table -->
+    <div class="card main-card">
+
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>All Campaigns</span>
+
+            <span class="badge bg-light text-dark">
+                {{ campaigns|length }} Total
+            </span>
+        </div>
+
+        <div class="card-body p-3 p-md-4">
 
             <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle">
 
-                    <thead class="table-dark">
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead>
                         <tr>
                             <th>ID</th>
                             <th>Campaign Name</th>
@@ -65,71 +173,87 @@
 
                         {% for campaign in campaigns %}
 
-<tr>
-    <td>{{ campaign.id }}</td>
+                        <tr>
 
-    <td>{{ campaign.name }}</td>
+                            <td>{{ campaign.id }}</td>
 
-    <td>{{ campaign.subject }}</td>
+                            <td class="fw-semibold">
+                                {{ campaign.name }}
+                            </td>
 
-    <td>
-        {% if campaign.status == 'sent' %}
-            <span class="badge bg-success">Sent</span>
-
-        {% elif campaign.status == 'partially_sent' %}
-            <span class="badge bg-warning text-dark">Partially Sent</span>
-
-        {% elif campaign.status == 'failed' %}
-            <span class="badge bg-danger">Failed</span>
-
-        {% else %}
-            <span class="badge bg-secondary">
-                {{ campaign.status|capitalize }}
-            </span>
-        {% endif %}
-    </td>
-
-    <td>
-        {{ campaign.created_at.strftime('%d-%m-%Y') if campaign.created_at else '' }}
-    </td>
-
-    <td>
-        <span class="badge bg-info text-dark">
-            {{ campaign_open_counts.get(campaign.id, 0) }}
-        </span>
-    </td>
+                            <td>{{ campaign.subject }}</td>
 
                             <td>
+                                {% if campaign.status == 'sent' %}
+
+                                    <span class="badge bg-success status-badge">
+                                        Sent
+                                    </span>
+
+                                {% elif campaign.status == 'partially_sent' %}
+
+                                    <span class="badge bg-warning text-dark status-badge">
+                                        Partially Sent
+                                    </span>
+
+                                {% elif campaign.status == 'failed' %}
+
+                                    <span class="badge bg-danger status-badge">
+                                        Failed
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-secondary status-badge">
+                                        {{ campaign.status|capitalize }}
+                                    </span>
+
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ campaign.created_at.strftime('%d-%m-%Y')
+                                   if campaign.created_at else '' }}
+                            </td>
+
+                            <td>
+                                <span class="badge bg-info text-dark status-badge">
+                                    {{ campaign_open_counts.get(campaign.id, 0) }}
+                                </span>
+                            </td>
+
+                            <td class="action-buttons">
 
                                 <a href="{{ url_for('main.edit_campaign', campaign_id=campaign.id) }}"
-                                   class="btn btn-warning btn-sm mb-1">
+                                   class="btn btn-sm btn-outline-primary mb-1">
                                     Edit
                                 </a>
 
                                 <a href="{{ url_for('main.manage_campaign_recipients', campaign_id=campaign.id) }}"
-   class="btn btn-info btn-sm mb-1">
-    Select Recipients
-</a>
+                                   class="btn btn-sm btn-outline-info mb-1">
+                                    Select Recipients
+                                </a>
 
-<form method="POST"
-      action="{{ url_for('main.send_test_campaign_email', campaign_id=campaign.id) }}"
-      style="display: inline;">
+                                <form method="POST"
+                                      action="{{ url_for('main.send_test_campaign_email', campaign_id=campaign.id) }}"
+                                      style="display:inline;">
 
-    <button type="submit" class="btn btn-primary btn-sm mb-1">
-        Send Test Email
-    </button>
+                                    <button type="submit"
+                                            class="btn btn-sm btn-outline-primary mb-1">
+                                        Send Test Email
+                                    </button>
 
-</form>
+                                </form>
 
                                 {% if campaign.status != 'sent' %}
 
                                 <form method="POST"
                                       action="{{ url_for('main.send_campaign', campaign_id=campaign.id) }}"
-                                      style="display: inline;"
+                                      style="display:inline;"
                                       onsubmit="return confirm('Are you sure you want to send this campaign to all eligible subscribers?');">
 
                                     <button type="submit"
-                                            class="btn btn-success btn-sm mb-1">
+                                            class="btn btn-sm btn-success mb-1">
                                         Send Campaign
                                     </button>
 
@@ -139,24 +263,42 @@
 
                                 <form method="POST"
                                       action="{{ url_for('main.delete_campaign', campaign_id=campaign.id) }}"
-                                      style="display: inline;"
+                                      style="display:inline;"
                                       onsubmit="return confirm('Are you sure you want to delete this campaign?');">
 
                                     <button type="submit"
-                                            class="btn btn-danger btn-sm mb-1">
+                                            class="btn btn-sm btn-outline-danger mb-1">
                                         Delete
                                     </button>
 
                                 </form>
 
                             </td>
+
                         </tr>
 
                         {% else %}
 
                         <tr>
-                            <td colspan="7" class="text-center text-muted">
-                                No campaigns created yet.
+                            <td colspan="7" class="text-center">
+
+                                <div class="empty-state">
+
+                                    <h5 class="text-secondary">
+                                        No Campaigns Yet
+                                    </h5>
+
+                                    <p class="text-muted">
+                                        Create your first email campaign to get started.
+                                    </p>
+
+                                    <a href="{{ url_for('main.add_campaign') }}"
+                                       class="btn btn-primary">
+                                        + Create First Campaign
+                                    </a>
+
+                                </div>
+
                             </td>
                         </tr>
 
@@ -165,9 +307,11 @@
                     </tbody>
 
                 </table>
+
             </div>
 
         </div>
+
     </div>
 
 </div>
@@ -176,3 +320,4 @@
 
 </body>
 </html>
+```
