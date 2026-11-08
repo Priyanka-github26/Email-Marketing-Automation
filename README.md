@@ -17,6 +17,12 @@ A web-based Email Marketing Automation Platform built using Python Flask and MyS
 - **Analytics Dashboard:** View campaign performance, open rates, and click rates.
 - **Reports:** Download campaign performance reports in CSV format.
 
+## Application Screenshots
+
+### Dashboard
+
+![Email Marketing Automation Dashboard](screenshots/dashboard.png)
+
 ## Technologies Used
 
 | Category | Technology |
@@ -45,7 +51,6 @@ Email-Marketing-Automation/
 ├── run.py
 ├── config.py
 ├── requirements.txt
-├── .env
 └── README.md
 ```
 
@@ -79,7 +84,7 @@ py -m pip install -r requirements.txt
 
 Create a `.env` file in the project root and configure the required database and Gmail SMTP settings.
 
-Do not upload your `.env` file or Gmail App Password to GitHub.
+**Important:** Do not upload your `.env` file or Gmail App Password to GitHub.
 
 ### 6. Run the application
 
